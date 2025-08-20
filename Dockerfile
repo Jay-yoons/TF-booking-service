@@ -6,6 +6,9 @@ COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew build -x test
 
+# Expose port
+EXPOSE 8082
+
 # 2. 실행 스테이지
 FROM openjdk:17-jdk-slim
 COPY --from=builder /app/build/libs/*.jar /app.jar
