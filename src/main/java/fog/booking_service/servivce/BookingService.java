@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,16 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final BookingStateCodeRepository stateCodeRepository;
+
+    /**
+     * 예약된 좌석 수 조회
+     * @param dateTime
+     * @return
+     */
+    public Integer getAvailableSeats(LocalDateTime dateTime) {
+        log.info("예약된 좌석 수 조회");
+        return bookingRepository.sumCountByBookingDate(dateTime);
+    }
 
     /*
     예약 리스트 조회
@@ -75,6 +86,10 @@ public class BookingService {
     public BookingResponse makeBooking(BookingRequest request) {
 
         log.info("예약 생성");
+        if (request.getSeats() - getAvailableSeats(request.getBookingDate()) < request.getCount()) {
+            throw new IllegalStateException("예약 가능한 좌석 수를 초과하였습니다.");
+        }
+
         BookingStateCode stateCode = stateCodeRepository.findById(0)
                 .orElseThrow(() -> new EntityNotFoundException("code 0 is not found"));
         log.info("userId={}", request.getUserId());

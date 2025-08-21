@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Base64;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,17 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final HttpServletRequest request; // HttpServletRequest 의존성 추가
+
+    /**
+     * 예약 된 좌석 수 조회
+     * 반드시 분, 초를 00:00으로 받을것
+     * @param dateTime
+     * @return
+     */
+    @GetMapping("/bookings/seats")
+    public Integer getAvailableSeats(LocalDateTime dateTime) {
+        return bookingService.getAvailableSeats(dateTime);
+    }
 
     /**
      * 내 예약 목록 조회
