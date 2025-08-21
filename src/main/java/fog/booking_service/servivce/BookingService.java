@@ -31,9 +31,9 @@ public class BookingService {
      * @param dateTime
      * @return
      */
-    public Integer getAvailableSeats(LocalDateTime dateTime) {
+    public Integer getAvailableSeats(String storeId, LocalDateTime dateTime) {
         log.info("예약된 좌석 수 조회");
-        return bookingRepository.sumCountByBookingDate(dateTime);
+        return bookingRepository.sumCountByBookingDate(storeId, dateTime, 0);
     }
 
     /*
@@ -86,7 +86,7 @@ public class BookingService {
     public BookingResponse makeBooking(BookingRequest request) {
 
         log.info("예약 생성");
-        if (request.getSeats() - getAvailableSeats(request.getBookingDate()) < request.getCount()) {
+        if (request.getSeats() - getAvailableSeats(request.getStoreId(), request.getBookingDate()) < request.getCount()) {
             throw new IllegalStateException("예약 가능한 좌석 수를 초과하였습니다.");
         }
 

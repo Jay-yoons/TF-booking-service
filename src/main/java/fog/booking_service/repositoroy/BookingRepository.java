@@ -11,6 +11,10 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findAllByUserId(String userId);
 
-    @Query("SELECT SUM(b.count) FROM Booking b WHERE b.bookingDate = :bookingDate AND b.bookingStateCode = 0")
-    Integer sumCountByBookingDate(@Param("bookingDate") LocalDateTime bookingDate);
+    @Query("SELECT SUM(b.count) FROM Booking b WHERE b.bookingDate = :bookingDate AND b.bookingStateCode = :bookingStateCode AND b.storeId = :storeId")
+    Integer sumCountByBookingDate(
+            @Param("storeId") String storeId,
+            @Param("bookingDate") LocalDateTime bookingDate,
+            @Param("bookingStateCode") Integer bookingStateCode
+    );
 }

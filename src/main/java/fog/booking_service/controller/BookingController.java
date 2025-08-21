@@ -1,5 +1,6 @@
 package fog.booking_service.controller;
 
+import fog.booking_service.config.CustomUserDetails;
 import fog.booking_service.domain.Booking;
 import fog.booking_service.dto.BookingListResponse;
 import fog.booking_service.dto.BookingRequest;
@@ -7,6 +8,8 @@ import fog.booking_service.dto.BookingResponse;
 import fog.booking_service.servivce.BookingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -27,14 +30,14 @@ public class BookingController {
     private final HttpServletRequest request; // HttpServletRequest 의존성 추가
 
     /**
-     * 예약 된 좌석 수 조회
+     * 예약된 좌석 수 조회
      * 반드시 분, 초를 00:00으로 받을것
      * @param dateTime
      * @return
      */
-    @GetMapping("/bookings/seats")
-    public Integer getAvailableSeats(LocalDateTime dateTime) {
-        return bookingService.getAvailableSeats(dateTime);
+    @GetMapping("/bookings/seats/{storeId}")
+    public Integer getAvailableSeats(@PathVariable String storeId, @RequestParam LocalDateTime dateTime) {
+        return bookingService.getAvailableSeats(storeId, dateTime);
     }
 
     /**
@@ -42,27 +45,22 @@ public class BookingController {
      * URL 경로에 사용자 ID를 포함하여 받도록 수정
      */
     @GetMapping("/bookings/users/{userId}")
-    public List<BookingListResponse> findBookingList() {
-        // 토큰에서 추출한 userId와 경로의 userId가 일치하는지 검증하는 로직 추가
-        String userId = getCurrentUserIdFromToken();
-        if (userId == null) {
+    public List<BookingListResponse> findBookingList(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable String userId) {
+        String loginId = userDetails.getUsername();
+        if (!loginId.equals(userId)) {
             throw new SecurityException("접근 권한이 없습니다.");
         }
-        log.info("예약 목록 조회 요청: userId={}", userId);
-        return bookingService.getBookingList(userId);
+        log.info("예약 목록 조회 요청: userId={}", loginId);
+        return bookingService.getBookingList(userDetails.getSub());
     }
 
     /**
      * 예약 상세 조회
      */
     @GetMapping("/bookings/{bookingNum}")
-    public BookingResponse findBooking(@PathVariable Long bookingNum) {
+    public BookingResponse findBooking(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long bookingNum) {
         // 1. JWT 토큰에서 사용자 ID 추출
-        String userId = getCurrentUserIdFromToken();
-        if (userId == null) {
-            log.error("JWT 토큰에서 userId를 추출할 수 없습니다.");
-            throw new IllegalArgumentException("로그인이 필요합니다.");
-        }
+        String userId = userDetails.getSub();
         log.info("예약 상세 조회 요청: bookingNum={}, userId={}", bookingNum, userId);
 
         // 2. 예약 정보 조회
@@ -81,15 +79,10 @@ public class BookingController {
      * 예약 생성
      */
     @PostMapping("/bookings/new")
-    public BookingResponse booking(@RequestBody BookingRequest requestBody) {
-        String userId = getCurrentUserIdFromToken();
-        if (userId == null) {
-            log.error("JWT 토큰에서 userId를 추출할 수 없습니다.");
-            throw new IllegalArgumentException("로그인이 필요합니다.");
-        }
+    public BookingResponse booking(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody BookingRequest requestBody) {
+        String userId = userDetails.getSub();
 
-        // 요청 본문(RequestBody)의 userId를 토큰에서 가져온 userId로 덮어쓰기
-        // 이렇게 하면 프론트에서 보낸 userId가 아닌, 로그인된 실제 사용자 ID가 사용됩니다.
+        log.info("예약자 id 일치여부 확인: requestId={}, tokenId={}", requestBody.getUserId(), userId);
         requestBody.setUserId(userId);
 
         log.info("예약 요청: userId={}, storeId={}, bookingDate={}, count={}",
@@ -101,12 +94,8 @@ public class BookingController {
      * 예약 취소
      */
     @PatchMapping("/bookings/{bookingNum}")
-    public BookingResponse cancelBooking(@PathVariable Long bookingNum) {
-        String userId = getCurrentUserIdFromToken();
-        if (userId == null) {
-            log.error("JWT 토큰에서 userId를 추출할 수 없습니다.");
-            throw new IllegalArgumentException("로그인이 필요합니다.");
-        }
+    public BookingResponse cancelBooking(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Long bookingNum) {
+        String userId = userDetails.getSub();
         log.info("예약 취소 요청: userId={}, bookingNum={}", userId, bookingNum);
 
         // 예약 취소 시 본인 예약인지 확인하는 로직 추가
@@ -118,54 +107,5 @@ public class BookingController {
 
         bookingService.cancelBooking(bookingNum);
         return bookingService.getBookingResponse(bookingNum);
-    }
-
-    /**
-     * 요청 헤더의 JWT 토큰에서 사용자 ID를 추출하는 헬퍼 메소드
-     */
-    private String getCurrentUserIdFromToken() {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("Authorization 헤더가 없거나 형식이 올바르지 않습니다.");
-            return null;
-        }
-
-        try {
-            String token = authHeader.substring(7);
-            log.info("추출된 토큰: {}", token);
-
-            String[] tokenParts = token.split("\\.");
-            if (tokenParts.length < 2) {
-                log.error("JWT 토큰 형식이 올바르지 않습니다. (부분: {})", tokenParts.length);
-                return null;
-            }
-
-            String payloadBase64 = tokenParts[1];
-            String base64 = payloadBase64.replace('-', '+').replace('_', '/');
-            while (base64.length() % 4 != 0) {
-                base64 += "=";
-            }
-
-            String payloadJson = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-            log.info("디코딩된 페이로드: {}", payloadJson);
-
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> payloadMap = mapper.readValue(payloadJson, HashMap.class);
-
-            log.info("페이로드 맵: {}", payloadMap);
-
-            // 'sub' 클레임을 읽도록 수정
-            Object userId = payloadMap.get("sub");
-            if (userId instanceof String) {
-                return (String) userId;
-            } else {
-                log.error("'sub' 키를 찾을 수 없거나 String 타입이 아닙니다.");
-                return null;
-            }
-
-        } catch (Exception e) {
-            log.error("JWT 토큰에서 사용자 ID 추출 실패", e);
-            return null;
-        }
     }
 }
