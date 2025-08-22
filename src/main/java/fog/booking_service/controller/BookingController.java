@@ -37,6 +37,7 @@ public class BookingController {
      */
     @GetMapping("/bookings/seats/{storeId}")
     public Integer getAvailableSeats(@PathVariable String storeId, @RequestParam LocalDateTime dateTime) {
+        log.info("예약된 좌석수 조회");
         return bookingService.getAvailableSeats(storeId, dateTime);
     }
 

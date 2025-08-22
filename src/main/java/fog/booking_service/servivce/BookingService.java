@@ -86,6 +86,9 @@ public class BookingService {
     public BookingResponse makeBooking(BookingRequest request) {
 
         log.info("예약 생성");
+        log.info("전체좌석={}", request.getSeats());
+        log.info("사용중인 좌석={}", getAvailableSeats(request.getStoreId(), request.getBookingDate()));
+        log.info("예약할 좌석={}", request.getCount());
         if (request.getSeats() - getAvailableSeats(request.getStoreId(), request.getBookingDate()) < request.getCount()) {
             throw new IllegalStateException("예약 가능한 좌석 수를 초과하였습니다.");
         }
