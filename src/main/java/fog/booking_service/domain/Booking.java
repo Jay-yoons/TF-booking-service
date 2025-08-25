@@ -16,7 +16,12 @@ import java.time.LocalDateTime;
 public class Booking {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "BOOKING_SEQ_GENERATOR")
+    @SequenceGenerator(
+            name = "BOOKING_SEQ_GENERATOR",
+            sequenceName = "BOOKING_BOOKING_NUM_SEQ", // 사용자가 제시한 시퀀스 이름
+            allocationSize = 1
+    )
     @Column(name = "BOOKING_NUM")
     private Long bookingNum;
 
