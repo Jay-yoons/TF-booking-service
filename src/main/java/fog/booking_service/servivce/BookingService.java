@@ -10,6 +10,7 @@ import fog.booking_service.repositoroy.BookingStateCodeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -120,5 +121,24 @@ public class BookingService {
         BookingStateCode stateCode = stateCodeRepository.findById(1)
                 .orElseThrow(() -> new EntityNotFoundException("code 1 is not found"));
         booking.setBookingStateCode(stateCode);
+    }
+
+    @Scheduled(cron = "0 0 * * * ?", zone = "Asia/Seoul")
+    public void updateBookingState() {
+        log.info("배치작업 시작");
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 현재 시간이 지난 CONFIRMED 상태의 예약 조회
+        List<Booking> bookingsToUpdate = bookingRepository.
+                findByBookingDateLessThanEqualAndBookingStateCode_BookingStateCode(now, 0);
+
+        // 2. COMPLETED 상태 코드 엔티티 가져오기
+        BookingStateCode completedStateCode = stateCodeRepository.findById(2)
+                .orElseThrow(() -> new RuntimeException("COMPLETED state code not found"));
+
+        // 3. 상태 업데이트
+        for (Booking booking : bookingsToUpdate) {
+            booking.setBookingStateCode(completedStateCode);
+        }
     }
 }

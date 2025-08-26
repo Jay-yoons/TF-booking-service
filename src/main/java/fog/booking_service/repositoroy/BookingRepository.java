@@ -1,7 +1,6 @@
 package fog.booking_service.repositoroy;
 
 import fog.booking_service.domain.Booking;
-import fog.booking_service.domain.BookingStateCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +17,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("bookingDate") LocalDateTime bookingDate,
             @Param("bookingStateCodeId") Integer bookingStateCodeId
     );
+
+    List<Booking> findByBookingDateLessThanEqualAndBookingStateCode_BookingStateCode(LocalDateTime now, int bookingStateCode);
 }
