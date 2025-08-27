@@ -3,7 +3,7 @@ FROM openjdk:17-jdk-slim AS builder
 WORKDIR /app
 COPY . .
 RUN chmod +x ./gradlew
-RUN ./gradlew build -x test
+RUN ./gradlew clean build -x test
 
 # 2. 실행 스테이지
 FROM openjdk:17-jdk-slim
