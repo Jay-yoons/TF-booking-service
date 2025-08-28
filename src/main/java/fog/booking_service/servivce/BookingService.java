@@ -123,7 +123,9 @@ public class BookingService {
         booking.setBookingStateCode(stateCode);
     }
 
-    @Scheduled(cron = "0 0 * * * ?", zone = "Asia/Seoul")
+    /**
+     * 1시간마다 배치작업으로 상태코드 변경
+     */
     public void updateBookingState() {
         log.info("배치작업 시작");
         LocalDateTime now = LocalDateTime.now();
@@ -131,6 +133,11 @@ public class BookingService {
         // 1. 현재 시간이 지난 CONFIRMED 상태의 예약 조회
         List<Booking> bookingsToUpdate = bookingRepository.
                 findByBookingDateLessThanEqualAndBookingStateCode_BookingStateCode(now, 0);
+
+        if (bookingsToUpdate.isEmpty()) {
+            log.info("업데이트할 예약 없음");
+            return;
+        }
 
         // 2. COMPLETED 상태 코드 엔티티 가져오기
         BookingStateCode completedStateCode = stateCodeRepository.findById(2)
@@ -140,5 +147,7 @@ public class BookingService {
         for (Booking booking : bookingsToUpdate) {
             booking.setBookingStateCode(completedStateCode);
         }
+
+        log.info("업데이트된 예약 수: {}", bookingsToUpdate.size());
     }
 }
