@@ -24,6 +24,7 @@ import java.util.HashMap;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
+@RequestMapping("/api")
 public class BookingController {
 
     private final BookingService bookingService;
