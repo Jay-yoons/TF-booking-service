@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -128,7 +130,12 @@ public class BookingService {
      */
     public void updateBookingState() {
         log.info("배치작업 시작");
-        LocalDateTime now = LocalDateTime.now();
+        // 한국 시간(Asia/Seoul)으로 ZonedDateTime 객체 생성
+        ZonedDateTime nowInSeoul = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // ZonedDateTime에서 LocalDateTime으로 변환
+        LocalDateTime now = nowInSeoul.toLocalDateTime();
+        log.info("배치작업 기준 현재 시간: {}", now);
 
         // 1. 현재 시간이 지난 CONFIRMED 상태의 예약 조회
         List<Booking> bookingsToUpdate = bookingRepository.
