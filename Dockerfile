@@ -7,6 +7,7 @@ RUN ./gradlew clean build -x test
 
 # 2. 실행 스테이지
 FROM openjdk:17-jdk-slim
+RUN apt-get update && apt-get install -y curl
 COPY --from=builder /app/build/libs/*.jar /app.jar
 
 # Expose port
