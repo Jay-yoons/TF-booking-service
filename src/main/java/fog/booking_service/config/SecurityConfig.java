@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 사용하지 않음
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/bookings/seats/**", "/health").permitAll() // 특정 경로만 허용
+                        .requestMatchers("/api/bookings/seats/**", "/health").permitAll() // 특정 경로만 허용
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증 필요
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // 커스텀 JWT 필터 추가
