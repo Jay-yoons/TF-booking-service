@@ -28,6 +28,14 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	// AWS SDK for SNS
+	implementation 'software.amazon.awssdk:sns:2.20.100'
+	// AWS SDK for Cognito Identity Provider
+	implementation 'software.amazon.awssdk:cognitoidentityprovider:2.20.100'
+
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
 	compileOnly 'org.projectlombok:lombok'
 //	runtimeOnly 'com.h2database:h2'
 //	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'

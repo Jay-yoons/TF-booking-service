@@ -39,3 +39,7 @@ logging:
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+aws:
+  cognito:
+    user-pool-id: ${COGNITO_USER_POOL_ID}

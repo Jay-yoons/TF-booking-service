@@ -27,6 +27,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final BookingStateCodeRepository stateCodeRepository;
+    private final MessageService messageService;
 
     /**
      * 예약된 좌석 수 조회
@@ -108,7 +109,10 @@ public class BookingService {
                 .count(request.getCount())
                 .stateCode(stateCode)
                 .build();
-        Long bookingNum = bookingRepository.save(booking).getBookingNum();
+        Booking savedBooking = bookingRepository.save(booking);
+        Long bookingNum = savedBooking.getBookingNum();
+        log.info("예약 생성 완료, 문자 발송 시작");
+        messageService.sendMessage(savedBooking);
         return getBookingResponse(bookingNum);
     }
 
