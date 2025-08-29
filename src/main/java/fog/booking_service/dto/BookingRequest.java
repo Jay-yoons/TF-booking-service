@@ -1,11 +1,5 @@
 package fog.booking_service.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import fog.booking_service.domain.BookingStateCode;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

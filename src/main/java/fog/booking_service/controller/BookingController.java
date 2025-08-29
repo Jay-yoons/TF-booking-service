@@ -6,20 +6,14 @@ import fog.booking_service.dto.BookingListResponse;
 import fog.booking_service.dto.BookingRequest;
 import fog.booking_service.dto.BookingResponse;
 import fog.booking_service.servivce.BookingService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Base64;
-import java.nio.charset.StandardCharsets;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @Slf4j

@@ -16,7 +16,7 @@ spring:
       jdbc:oracle:thin:@(DESCRIPTION=
         (ADDRESS_LIST=
           (ADDRESS=(PROTOCOL=TCP)(HOST=${DB_HOST})(PORT=${DB_PORT}))
-          (ADDRESS=(PROTOCOL=TCP)(HOST=10.0.13.76)(PORT=${DB_PORT}))
+          (ADDRESS=(PROTOCOL=TCP)(HOST=${STDB_HOST})(PORT=${DB_PORT}))
         )
         (CONNECT_DATA=(SERVICE_NAME=${DB_NAME}))
         (FAILOVER=on)(LOAD_BALANCE=off)

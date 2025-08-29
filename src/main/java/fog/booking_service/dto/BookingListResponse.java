@@ -1,6 +1,5 @@
 package fog.booking_service.dto;
 
-import fog.booking_service.domain.BookingStateCode;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
