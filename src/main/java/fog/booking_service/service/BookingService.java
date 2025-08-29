@@ -1,4 +1,4 @@
-package fog.booking_service.servivce;
+package fog.booking_service.service;
 
 import fog.booking_service.domain.Booking;
 import fog.booking_service.domain.BookingStateCode;
@@ -86,7 +86,7 @@ public class BookingService {
     /*
     예약 생성
      */
-    public BookingResponse makeBooking(BookingRequest request) {
+    public BookingResponse makeBooking(BookingRequest request, String userName) {
 
         log.info("예약 생성");
         log.info("전체좌석={}", request.getSeats());
@@ -112,7 +112,7 @@ public class BookingService {
         Booking savedBooking = bookingRepository.save(booking);
         Long bookingNum = savedBooking.getBookingNum();
         log.info("예약 생성 완료, 문자 발송 시작");
-        messageService.sendMessage(savedBooking);
+        messageService.sendMessage(savedBooking, userName);
         return getBookingResponse(bookingNum);
     }
 

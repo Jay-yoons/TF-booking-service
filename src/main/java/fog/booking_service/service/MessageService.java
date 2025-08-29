@@ -1,4 +1,4 @@
-package fog.booking_service.servivce;
+package fog.booking_service.service;
 
 import fog.booking_service.domain.Booking;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +24,9 @@ public class MessageService {
     private final SnsClient snsClient;
     private final CognitoIdentityProviderClient cognitoClient;
 
-    public void sendMessage(Booking booking) {
+    public void sendMessage(Booking booking, String userName) {
         // 1. Cognito에서 전화번호 조회
-        String phoneNumber = getPhoneNumberFromCognito(booking.getUserId());
+        String phoneNumber = getPhoneNumberFromCognito(userName);
         LocalDateTime bookingDate = booking.getBookingDate();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
         String date = bookingDate.format(formatter);
@@ -39,12 +39,12 @@ public class MessageService {
         }
     }
 
-    private String getPhoneNumberFromCognito(String userId) {
+    private String getPhoneNumberFromCognito(String userName) {
         try {
-            log.info("userPoolId={}", userPoolId);
+            log.info("userPoolId={}, userName={}", userPoolId, userName);
             AdminGetUserRequest request = AdminGetUserRequest.builder()
                     .userPoolId(userPoolId)
-                    .username(userId)
+                    .username(userName)
                     .build();
 
             AdminGetUserResponse response = cognitoClient.adminGetUser(request);
@@ -56,7 +56,7 @@ public class MessageService {
                 }
             }
         } catch (UserNotFoundException e) {
-            log.warn("Cognito User Pool에서 사용자를 찾을 수 없습니다: {}", userId);
+            log.warn("Cognito User Pool에서 사용자를 찾을 수 없습니다: {}", userName);
         } catch (CognitoIdentityProviderException e) {
             // 기타 Cognito 관련 예외 처리
             log.error("Cognito에서 사용자 정보 조회 중 오류가 발생했습니다: {}", e.awsErrorDetails().errorMessage());

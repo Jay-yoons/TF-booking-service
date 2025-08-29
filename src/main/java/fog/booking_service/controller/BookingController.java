@@ -5,7 +5,7 @@ import fog.booking_service.domain.Booking;
 import fog.booking_service.dto.BookingListResponse;
 import fog.booking_service.dto.BookingRequest;
 import fog.booking_service.dto.BookingResponse;
-import fog.booking_service.servivce.BookingService;
+import fog.booking_service.service.BookingService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class BookingController {
 
         log.info("예약 요청: userId={}, storeId={}, bookingDate={}, count={}",
                 requestBody.getUserId(), requestBody.getStoreId(), requestBody.getBookingDate(), requestBody.getCount());
-        return bookingService.makeBooking(requestBody);
+        return bookingService.makeBooking(requestBody, userDetails.getUsername());
     }
 
     /**

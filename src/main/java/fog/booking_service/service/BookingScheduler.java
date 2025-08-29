@@ -1,4 +1,4 @@
-package fog.booking_service.servivce;
+package fog.booking_service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
