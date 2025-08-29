@@ -11,7 +11,7 @@ public class AwsConfig {
     @Bean
     public SnsClient snsClient() {
         return SnsClient.builder()
-                .region(Region.AP_NORTHEAST_2) // 예: 서울 리전
+                .region(Region.AP_NORTHEAST_1) // 도쿄 리전
                 .build();
     }
 
