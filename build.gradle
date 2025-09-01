@@ -33,6 +33,8 @@ dependencies {
 	implementation 'software.amazon.awssdk:sns:2.20.100'
 	// AWS SDK for Cognito Identity Provider
 	implementation 'software.amazon.awssdk:cognitoidentityprovider:2.20.100'
+	// AWS SQS
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.4.0'
 
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
