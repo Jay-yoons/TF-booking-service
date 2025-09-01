@@ -130,13 +130,16 @@ public class BookingService {
             messageService.sendMessage(savedBooking, request.getUserName());
 
             sendSseEvent(request.getUserId(), new BookingStatusMessage("success", "예약이 성공적으로 완료되었습니다.", savedBooking.getBookingNum()));
+            acknowledgement.acknowledge();
 
         } catch (IllegalStateException e) { // SSE로 실패 메시지 전송
             log.warn("예약 가능한 좌석을 초과했습니다. userId={}", request.getUserId());
             sendSseEvent(request.getUserId(), new BookingStatusMessage("failure", "예약 가능한 좌석 수를 초과하였습니다.", null));
+            acknowledgement.acknowledge();
         } catch (Exception e) { // SSE로 기타 오류 메시지 전송
             log.error("예약 처리 중 오류 발생: {}", e.getMessage());
             sendSseEvent(request.getUserId(), new BookingStatusMessage("failure", "예약 처리 중 오류가 발생했습니다.", null));
+            acknowledgement.acknowledge();
         }
     }
 

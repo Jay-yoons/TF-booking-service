@@ -42,7 +42,7 @@ public class BookingController {
      * @param userId
      * @return
      */
-    @GetMapping("/sse/booking-status/{userId}")
+    @GetMapping("/bookings/booking-status/{userId}")
     public SseEmitter connect(@PathVariable String userId) {
         SseEmitter emitter = new SseEmitter(10 * 60 * 1000L); // 10분 타임아웃
         emitters.put(userId, emitter);
