@@ -134,7 +134,8 @@ public class BookingController {
         sqsRequest.setUserName(userDetails.getUsername());
 
         // 고유한 메시지 그룹 ID 생성 (FIFO 큐에 필수)
-        String messageGroupId = "booking-group-" + userId;
+        // 동시성 제어 - 메시지 순차 처리
+        String messageGroupId = request.getStoreId() + "_" + request.getBookingDate().toString();
 
         // SQS 큐로 메시지 전송
         sqsTemplate.send(sqsSendOptions -> sqsSendOptions
