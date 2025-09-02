@@ -5,15 +5,23 @@ import fog.booking_service.domain.Booking;
 import fog.booking_service.dto.BookingListResponse;
 import fog.booking_service.dto.BookingRequest;
 import fog.booking_service.dto.BookingResponse;
+import fog.booking_service.dto.SQSBookingRequest;
 import fog.booking_service.service.BookingService;
-import jakarta.servlet.http.HttpServletRequest;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @Slf4j
@@ -22,7 +30,34 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
-    private final HttpServletRequest request; // HttpServletRequest 의존성 추가
+    private final SqsTemplate sqsTemplate;
+
+    @Value("${aws.sqs.queue.booking-request}")
+    private String bookingRequestQueue;
+
+    public static Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+
+    /**
+     * SSE 연결을 위한 엔드포인트
+     * @param userId
+     * @return
+     */
+    @GetMapping("/bookings/booking-status/{userId}")
+    public SseEmitter connect(@PathVariable String userId, @RequestParam String token) {
+        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L); // 10분 타임아웃
+        emitters.put(userId, emitter);
+
+        emitter.onCompletion(() -> emitters.remove(userId));
+        emitter.onTimeout(() -> emitters.remove(userId));
+
+        try {
+            emitter.send(SseEmitter.event().name("connect").data("connected!"));
+        } catch (IOException e) {
+            log.error("SSE connect send failed: ", e);
+        }
+
+        return emitter;
+    }
 
     /**
      * 예약된 좌석 수 조회
@@ -72,9 +107,9 @@ public class BookingController {
     }
 
     /**
-     * 예약 생성
+     * 예약 생성 - 기존
      */
-    @PostMapping("/bookings/new")
+/*    @PostMapping("/bookings/new")
     public BookingResponse booking(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody BookingRequest requestBody) {
         String userId = userDetails.getSub();
 
@@ -84,6 +119,33 @@ public class BookingController {
         log.info("예약 요청: userId={}, storeId={}, bookingDate={}, count={}",
                 requestBody.getUserId(), requestBody.getStoreId(), requestBody.getBookingDate(), requestBody.getCount());
         return bookingService.makeBooking(requestBody, userDetails.getUsername());
+    }*/
+
+    /**
+     * 예약 생성 - AWS SQS 사용
+     */
+    @PostMapping("/bookings/new")
+    public String booking(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody BookingRequest request) {
+        String userId = userDetails.getSub();
+        request.setUserId(userId);
+
+        SQSBookingRequest sqsRequest = new SQSBookingRequest();
+        BeanUtils.copyProperties(request, sqsRequest);
+        sqsRequest.setUserName(userDetails.getUsername());
+
+        // 고유한 메시지 그룹 ID 생성 (FIFO 큐에 필수)
+        String messageGroupId = "booking-group-" + userId;
+
+        // SQS 큐로 메시지 전송
+        sqsTemplate.send(sqsSendOptions -> sqsSendOptions
+                .queue(bookingRequestQueue)
+                .payload(sqsRequest)
+                .messageDeduplicationId(UUID.randomUUID().toString())
+                .messageGroupId(messageGroupId)
+        );
+
+        log.info("예약 요청 SQS 큐 전송: userId={}", userId);
+        return "예약 처리중입니다.";
     }
 
     /**

@@ -43,3 +43,6 @@ logging:
 aws:
   cognito:
     user-pool-id: ${COGNITO_USER_POOL_ID}
+  sqs:
+    queue:
+      booking-request: BookingService.fifo
