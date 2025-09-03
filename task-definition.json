@@ -4,11 +4,11 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::892387177770:role/ecs-task-execution-role",
+      "executionRoleArn": "arn:aws:iam::733995297457:role/ecs-task-execution-role",
   "containerDefinitions": [
     {
       "name": "booking",
-      "image": "892387177770.dkr.ecr.ap-northeast-2.amazonaws.com/booking-service:latest",
+              "image": "733995297457.dkr.ecr.ap-northeast-2.amazonaws.com/booking-service:latest",
       "portMappings": [
         {
           "containerPort": 8080,
