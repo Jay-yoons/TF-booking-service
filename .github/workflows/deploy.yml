@@ -212,21 +212,7 @@ jobs:
             exit 1
           fi
 
-      - name: Send deployment notification
-        run: |
-          echo "📢 Sending deployment notification..."
-          
-          aws sns publish \
-            --region ap-northeast-1 \
-            --topic-arn ${{ secrets.TOKYO_SNS_TOPIC_ARN }} \
-            --message "🎉 Booking service deployment completed successfully! 
-          
-          Commit: ${{ github.sha }}
-          Image: ${{ needs.build-and-push.outputs.outputs.registry }}/booking-service:latest
-          Status: $SERVICE_STATUS
-          Running Tasks: $RUNNING_COUNT
-          
-          Deployed at: $(date '+%Y-%m-%d %H:%M:%S KST')"
+
 
       - name: Update CloudWatch metrics
         run: |
