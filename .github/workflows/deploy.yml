@@ -95,7 +95,7 @@ jobs:
           
           echo "📄 Task definition details saved to current-task-definition.json"
 
-      - name: Update task definition with new image
+      - name: Update task definition and deploy to ECS
         run: |
           echo "🔄 Updating task definition with new image..."
           
@@ -154,7 +154,6 @@ jobs:
           REGISTER_EXIT_CODE=$?
           echo "🔍 Register command exit code: $REGISTER_EXIT_CODE"
           
-          echo "new_task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
           echo "✅ New task definition registered: $NEW_TASK_DEF_ARN"
           
           # 변수 값 확인
@@ -170,19 +169,11 @@ jobs:
               --region ap-northeast-2 2>&1
             exit 1
           fi
-
-      - name: Deploy to Amazon ECS
-        run: |
+          
           echo "🚀 Deploying to Amazon ECS..."
           
           # ECS 서비스 업데이트 - 새로 등록된 태스크 정의 사용
           echo "🔍 Using task definition: '$NEW_TASK_DEF_ARN'"
-          
-          # 변수가 비어있는지 확인
-          if [ -z "$NEW_TASK_DEF_ARN" ]; then
-            echo "❌ Error: NEW_TASK_DEF_ARN is empty!"
-            exit 1
-          fi
           
           aws ecs update-service \
             --cluster fog-cluster \
