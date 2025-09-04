@@ -114,6 +114,7 @@ jobs:
           cat current-task-definition.json | jq 'keys'
           
           # 올바른 경로로 데이터 추출 (taskDefinition 키 내부에서)
+          # None 값이 아닌 필드만 포함
           jq '{
             family: .taskDefinition.family,
             executionRoleArn: .taskDefinition.executionRoleArn,
@@ -124,9 +125,8 @@ jobs:
             memory: .taskDefinition.memory,
             containerDefinitions: .taskDefinition.containerDefinitions,
             volumes: .taskDefinition.volumes,
-            placementConstraints: .taskDefinition.placementConstraints,
-            runtimePlatform: .taskDefinition.runtimePlatform
-          }' current-task-definition.json > new-task-definition.json
+            placementConstraints: .taskDefinition.placementConstraints
+          } | with_entries(select(.value != null))' current-task-definition.json > new-task-definition.json
           
           # 이미지 업데이트
           jq '.containerDefinitions[0].image = "'$NEW_IMAGE'"' new-task-definition.json > temp.json && mv temp.json new-task-definition.json
