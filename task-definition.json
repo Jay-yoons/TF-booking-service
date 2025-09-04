@@ -4,7 +4,8 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-      "executionRoleArn": "arn:aws:iam::733995297457:role/ecs-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::733995297457:role/ecs-task-role",
+  "executionRoleArn": "arn:aws:iam::733995297457:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "booking",
