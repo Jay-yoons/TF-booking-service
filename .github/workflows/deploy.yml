@@ -101,8 +101,17 @@ jobs:
           # 새로운 이미지로 태스크 정의 업데이트
           NEW_IMAGE="${{ needs.build-and-push.outputs.registry }}/booking-service:latest"
           
-          jq ".taskDefinition.containerDefinitions[0].image = \"$NEW_IMAGE\"" \
+          echo "🖼️ New image: $NEW_IMAGE"
+          
+          # JSON 구조 수정: taskDefinition 키 제거하고 직접 컨테이너 정의 수정
+          jq '.containerDefinitions[0].image = "'$NEW_IMAGE'"' \
             current-task-definition.json > new-task-definition.json
+          
+          # JSON 구조 검증
+          echo "🔍 Validating JSON structure..."
+          cat new-task-definition.json | jq '.family' > /dev/null
+          cat new-task-definition.json | jq '.containerDefinitions' > /dev/null
+          echo "✅ JSON structure validation passed"
           
           echo "🆕 New task definition created with image: $NEW_IMAGE"
           
