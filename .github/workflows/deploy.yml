@@ -153,11 +153,11 @@ jobs:
         run: |
           echo "🚀 Deploying to Amazon ECS..."
           
-          # ECS 서비스 업데이트
+          # ECS 서비스 업데이트 - 새로 등록된 태스크 정의 사용
           aws ecs update-service \
             --cluster fog-cluster \
             --service booking-service \
-            --task-definition ${{ steps.get-task-def.outputs.current_task_def }} \
+            --task-definition $NEW_TASK_DEF_ARN \
             --region ap-northeast-2
           
           echo "✅ ECS service updated successfully"
