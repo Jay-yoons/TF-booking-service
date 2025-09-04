@@ -141,11 +141,18 @@ jobs:
           
           # 태스크 정의 등록
           echo "📝 Registering new task definition..."
+          echo "📄 JSON file content preview:"
+          head -5 new-task-definition.json
+          
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
             --cli-input-json file://new-task-definition.json \
             --region ap-northeast-2 \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
+          
+          # 명령어 실행 결과 확인
+          REGISTER_EXIT_CODE=$?
+          echo "🔍 Register command exit code: $REGISTER_EXIT_CODE"
           
           echo "new_task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
           echo "✅ New task definition registered: $NEW_TASK_DEF_ARN"
@@ -153,6 +160,16 @@ jobs:
           # 변수 값 확인
           echo "🔍 NEW_TASK_DEF_ARN value: '$NEW_TASK_DEF_ARN'"
           echo "🔍 Variable length: ${#NEW_TASK_DEF_ARN}"
+          
+          # 등록 실패 시 에러 처리
+          if [ $REGISTER_EXIT_CODE -ne 0 ] || [ -z "$NEW_TASK_DEF_ARN" ]; then
+            echo "❌ Task definition registration failed!"
+            echo "🔍 Checking AWS CLI error..."
+            aws ecs register-task-definition \
+              --cli-input-json file://new-task-definition.json \
+              --region ap-northeast-2 2>&1
+            exit 1
+          fi
 
       - name: Deploy to Amazon ECS
         run: |
