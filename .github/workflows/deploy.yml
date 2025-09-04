@@ -49,6 +49,7 @@ jobs:
           echo "✅ Images pushed successfully:"
           echo "  - $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           echo "  - $ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "registry=$ECR_REGISTRY" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build-and-push
@@ -103,9 +104,24 @@ jobs:
           
           echo "🖼️ New image: $NEW_IMAGE"
           
-          # JSON 구조 수정: taskDefinition 키 제거하고 직접 컨테이너 정의 수정
-          jq '.containerDefinitions[0].image = "'$NEW_IMAGE'"' \
-            current-task-definition.json > new-task-definition.json
+          # JSON 구조 완전 재구성: taskDefinition 키 제거하고 필요한 필드만 추출
+          echo "🔧 Restructuring JSON for ECS registration..."
+          jq '{
+            family: .family,
+            executionRoleArn: .executionRoleArn,
+            taskRoleArn: .taskRoleArn,
+            networkMode: .networkMode,
+            requiresCompatibilities: .requiresCompatibilities,
+            cpu: .cpu,
+            memory: .memory,
+            containerDefinitions: .containerDefinitions,
+            volumes: .volumes,
+            placementConstraints: .placementConstraints,
+            runtimePlatform: .runtimePlatform
+          }' current-task-definition.json > new-task-definition.json
+          
+          # 이미지 업데이트
+          jq '.containerDefinitions[0].image = "'$NEW_IMAGE'"' new-task-definition.json > temp.json && mv temp.json new-task-definition.json
           
           # JSON 구조 검증
           echo "🔍 Validating JSON structure..."
