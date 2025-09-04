@@ -100,24 +100,32 @@ jobs:
           echo "🔄 Updating task definition with new image..."
           
           # 새로운 이미지로 태스크 정의 업데이트
-          NEW_IMAGE="${{ needs.build-and-push.outputs.registry }}/booking-service:latest"
+          # ECR 레지스트리 직접 가져오기
+          ECR_REGISTRY="733995297457.dkr.ecr.ap-northeast-2.amazonaws.com"
+          NEW_IMAGE="$ECR_REGISTRY/booking-service:latest"
           
           echo "🖼️ New image: $NEW_IMAGE"
           
           # JSON 구조 완전 재구성: taskDefinition 키 제거하고 필요한 필드만 추출
           echo "🔧 Restructuring JSON for ECS registration..."
+          
+          # 먼저 JSON 구조 확인
+          echo "📋 Current JSON structure:"
+          cat current-task-definition.json | jq 'keys'
+          
+          # 올바른 경로로 데이터 추출 (taskDefinition 키 내부에서)
           jq '{
-            family: .family,
-            executionRoleArn: .executionRoleArn,
-            taskRoleArn: .taskRoleArn,
-            networkMode: .networkMode,
-            requiresCompatibilities: .requiresCompatibilities,
-            cpu: .cpu,
-            memory: .memory,
-            containerDefinitions: .containerDefinitions,
-            volumes: .volumes,
-            placementConstraints: .placementConstraints,
-            runtimePlatform: .runtimePlatform
+            family: .taskDefinition.family,
+            executionRoleArn: .taskDefinition.executionRoleArn,
+            taskRoleArn: .taskDefinition.taskRoleArn,
+            networkMode: .taskDefinition.networkMode,
+            requiresCompatibilities: .taskDefinition.requiresCompatibilities,
+            cpu: .taskDefinition.cpu,
+            memory: .taskDefinition.memory,
+            containerDefinitions: .taskDefinition.containerDefinitions,
+            volumes: .taskDefinition.volumes,
+            placementConstraints: .taskDefinition.placementConstraints,
+            runtimePlatform: .taskDefinition.runtimePlatform
           }' current-task-definition.json > new-task-definition.json
           
           # 이미지 업데이트
