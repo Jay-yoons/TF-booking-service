@@ -144,16 +144,19 @@ jobs:
           echo "📄 JSON file content preview:"
           head -5 new-task-definition.json
           
-          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+          # 태스크 정의 등록 결과를 파일로 저장
+          aws ecs register-task-definition \
             --cli-input-json file://new-task-definition.json \
             --region ap-northeast-2 \
             --query 'taskDefinition.taskDefinitionArn' \
-            --output text)
+            --output text > task_def_arn.txt
           
           # 명령어 실행 결과 확인
           REGISTER_EXIT_CODE=$?
           echo "🔍 Register command exit code: $REGISTER_EXIT_CODE"
           
+          # 파일에서 ARN 읽기
+          NEW_TASK_DEF_ARN=$(cat task_def_arn.txt)
           echo "✅ New task definition registered: $NEW_TASK_DEF_ARN"
           
           # 변수 값 확인
