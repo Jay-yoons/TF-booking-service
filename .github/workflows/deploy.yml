@@ -214,13 +214,3 @@ jobs:
 
 
 
-      - name: Update CloudWatch metrics
-        run: |
-          echo "📈 Updating CloudWatch metrics..."
-          
-          aws cloudwatch put-metric-data \
-            --region us-east-1 \
-            --namespace "FOG/Deployments" \
-            --metric-data MetricName=BookingServiceDeployments,Value=1,Unit=Count
-          
-          echo "✅ CloudWatch metrics updated"
