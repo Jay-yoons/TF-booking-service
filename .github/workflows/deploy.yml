@@ -43,29 +43,165 @@ jobs:
           IMAGE_TAG: ${{ steps.vars.outputs.current_time }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "✅ Images pushed successfully:"
+          echo "  - $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "  - $ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
-      - name: Update ECS Task Definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          task-definition: task-definition.json
-          container-name: booking
-          image: ${{ steps.login-ecr.outputs.registry }}/booking-service:${{ steps.vars.outputs.current_time }}
+          role-to-assume: arn:aws:iam::733995297457:role/GitHub_Actions
+          aws-region: ap-northeast-2
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Get current task definition
+        id: get-task-def
+        run: |
+          echo "🔍 Getting current task definition..."
+          
+          # 현재 실행 중인 태스크 정의 가져오기
+          CURRENT_TASK_DEF=$(aws ecs describe-services \
+            --cluster fog-cluster \
+            --services booking-service \
+            --region ap-northeast-2 \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          echo "current_task_def=$CURRENT_TASK_DEF" >> $GITHUB_OUTPUT
+          echo "📋 Current task definition: $CURRENT_TASK_DEF"
+          
+          # 태스크 정의 상세 정보 가져오기
+          aws ecs describe-task-definition \
+            --task-definition $CURRENT_TASK_DEF \
+            --region ap-northeast-2 \
+            --output json > current-task-definition.json
+          
+          echo "📄 Task definition details saved to current-task-definition.json"
+
+      - name: Update task definition with new image
+        run: |
+          echo "🔄 Updating task definition with new image..."
+          
+          # 새로운 이미지로 태스크 정의 업데이트
+          NEW_IMAGE="${{ needs.build-and-push.outputs.registry }}/booking-service:latest"
+          
+          jq ".taskDefinition.containerDefinitions[0].image = \"$NEW_IMAGE\"" \
+            current-task-definition.json > new-task-definition.json
+          
+          echo "🆕 New task definition created with image: $NEW_IMAGE"
+          
+          # 태스크 정의 등록
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-definition.json \
+            --region ap-northeast-2 \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          echo "new_task_def_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "✅ New task definition registered: $NEW_TASK_DEF_ARN"
 
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: booking-service
-          cluster: fog-cluster
-          wait-for-service-stability: true
-
-      - name: Verify deployment
         run: |
-          echo "Waiting for service to be stable..."
+          echo "🚀 Deploying to Amazon ECS..."
+          
+          # ECS 서비스 업데이트
+          aws ecs update-service \
+            --cluster fog-cluster \
+            --service booking-service \
+            --task-definition ${{ steps.get-task-def.outputs.current_task_def }} \
+            --region ap-northeast-2
+          
+          echo "✅ ECS service updated successfully"
+
+      - name: Wait for service stability
+        run: |
+          echo "⏳ Waiting for service to be stable..."
+          
+          # 서비스 안정화 대기
           aws ecs wait services-stable \
             --cluster fog-cluster \
             --services booking-service \
             --region ap-northeast-2
-          echo "Deployment completed successfully!"
+          
+          echo "✅ Service is now stable"
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          
+          # 배포 상태 확인
+          SERVICE_STATUS=$(aws ecs describe-services \
+            --cluster fog-cluster \
+            --services booking-service \
+            --region ap-northeast-2 \
+            --query 'services[0].status' \
+            --output text)
+          
+          RUNNING_COUNT=$(aws ecs describe-services \
+            --cluster fog-cluster \
+            --services booking-service \
+            --region ap-northeast-2 \
+            --query 'services[0].runningCount' \
+            --output text)
+          
+          DESIRED_COUNT=$(aws ecs describe-services \
+            --cluster fog-cluster \
+            --services booking-service \
+            --region ap-northeast-2 \
+            --query 'services[0].desiredCount' \
+            --output text)
+          
+          echo "📊 Deployment Status:"
+          echo "  - Service Status: $SERVICE_STATUS"
+          echo "  - Running Tasks: $RUNNING_COUNT"
+          echo "  - Desired Tasks: $DESIRED_COUNT"
+          
+          if [ "$SERVICE_STATUS" = "ACTIVE" ] && [ "$RUNNING_COUNT" -eq "$DESIRED_COUNT" ] && [ "$RUNNING_COUNT" -gt 0 ]; then
+            echo "🎉 Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi
+
+      - name: Send deployment notification
+        run: |
+          echo "📢 Sending deployment notification..."
+          
+          aws sns publish \
+            --region ap-northeast-1 \
+            --topic-arn ${{ secrets.TOKYO_SNS_TOPIC_ARN }} \
+            --message "🎉 Booking service deployment completed successfully! 
+          
+          Commit: ${{ github.sha }}
+          Image: ${{ needs.build-and-push.outputs.outputs.registry }}/booking-service:latest
+          Status: $SERVICE_STATUS
+          Running Tasks: $RUNNING_COUNT
+          
+          Deployed at: $(date '+%Y-%m-%d %H:%M:%S KST')"
+
+      - name: Update CloudWatch metrics
+        run: |
+          echo "📈 Updating CloudWatch metrics..."
+          
+          aws cloudwatch put-metric-data \
+            --region us-east-1 \
+            --namespace "FOG/Deployments" \
+            --metric-data MetricName=BookingServiceDeployments,Value=1,Unit=Count
+          
+          echo "✅ CloudWatch metrics updated"

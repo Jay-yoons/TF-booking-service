@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class BookingServiceApplication {
 
+	// Test comment for GitHub Actions workflow trigger - 2025-09-04
 	public static void main(String[] args) {
 		SpringApplication.run(BookingServiceApplication.class, args);
 	}
