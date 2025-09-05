@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 import software.amazon.awssdk.services.sns.SnsClient;
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class MessageService {
 
     private final SnsClient snsClient;
     private final CognitoIdentityProviderClient cognitoClient;
+    private final RestTemplate restTemplate;
 
     public void sendMessage(Booking booking, String userName) {
         // 1. Cognito에서 전화번호 조회
@@ -31,10 +34,13 @@ public class MessageService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
         String date = bookingDate.format(formatter);
         int count = booking.getCount();
+        String storeId = booking.getStoreId();
 
         // 2. 예약 완료 문자 발송
         if (phoneNumber != null) {
-            String message = date + "시 " + count + "좌석 예약이 완료되었습니다.";
+            String storeName = getStoreName(storeId);
+            String message = String.format("🍽️ [Talking Potato]\n%s시 %d명 예약이 완료되었습니다.\n가게: %s\n감사합니다!", 
+                                          date, count, storeName);
             publishSmsMessage(phoneNumber, message);
         }
     }
@@ -65,6 +71,32 @@ public class MessageService {
             log.error("예상치 못한 오류가 발생했습니다: {}", e.getMessage());
         }
         return  null; //오류 발생
+    }
+
+    private String getStoreName(String storeId) {
+        try {
+            // Store Service에서 가게 목록 조회
+            String storeServiceUrl = "https://talkingpotato.shop/api/stores";
+            log.info("Store Service 호출: {}", storeServiceUrl);
+            
+            Map[] stores = restTemplate.getForObject(storeServiceUrl, Map[].class);
+            
+            if (stores != null) {
+                for (Map<String, Object> store : stores) {
+                    if (storeId.equals(store.get("storeId"))) {
+                        String storeName = (String) store.get("storeName");
+                        log.info("가게 이름 조회 성공: {} -> {}", storeId, storeName);
+                        return storeName;
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            log.warn("Store Service에서 가게 정보 조회 실패: storeId={}, error={}", storeId, e.getMessage());
+        }
+        
+        // 실패 시 기본값 반환
+        return "Talking Potato " + storeId;
     }
 
     private void publishSmsMessage(String phoneNumber, String message) {

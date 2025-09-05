@@ -2,6 +2,7 @@ package fog.booking_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.sns.SnsClient;
@@ -20,5 +21,10 @@ public class AwsConfig {
         return CognitoIdentityProviderClient.builder()
                 .region(Region.AP_NORTHEAST_2)
                 .build();
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }
