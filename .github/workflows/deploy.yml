@@ -236,5 +236,29 @@ jobs:
             exit 1
           fi
 
+      - name: CloudFront Cache Invalidation
+        run: |
+          echo "🔄 Starting CloudFront cache invalidation..."
+          
+          # CloudFront Distribution ID
+          DISTRIBUTION_ID="E3NPLCVDB66SWW"
+          
+          # Booking Service 관련 경로만 무효화 (기존 ALB 규칙 기준)
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id $DISTRIBUTION_ID \
+            --paths "/api/bookings/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          
+          echo "📋 Invalidation ID: $INVALIDATION_ID"
+          echo "⏳ Waiting for invalidation to complete..."
+          
+          # 무효화 완료 대기 (최대 10분)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id $DISTRIBUTION_ID \
+            --id $INVALIDATION_ID
+          
+          echo "✅ CloudFront cache invalidation completed!"
+
 
 
