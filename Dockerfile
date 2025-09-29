@@ -3,19 +3,12 @@
 # =============================================================================
 
 # 1. 빌드 스테이지 (보안 강화)
-FROM openjdk:17-jdk-slim AS builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 
 # 보안 업데이트 및 취약점 패치
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y \
-    zlib1g=1:1.2.11.dfsg-2+deb11u2 \
-    libtasn1-6=4.16.0-2+deb11u1 \
-    libpcre2-8-0=10.36-2+deb11u1 \
-    openssl=1.1.1n-0+deb11u4 \
-    curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache curl
 
 WORKDIR /app
 COPY . .
@@ -23,23 +16,16 @@ RUN chmod +x ./gradlew
 RUN ./gradlew clean build -x test
 
 # 2. 실행 스테이지 (보안 강화)
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre-alpine
 
 # 보안 업데이트 및 취약점 패치
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y \
-    zlib1g=1:1.2.11.dfsg-2+deb11u2 \
-    libtasn1-6=4.16.0-2+deb11u1 \
-    libpcre2-8-0=10.36-2+deb11u1 \
-    openssl=1.1.1n-0+deb11u4 \
-    curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache curl
 
 # 비루트 사용자 생성
-RUN groupadd -r appuser && \
-    useradd -r -g appuser -u 1001 -d /app -s /bin/false appuser
+RUN addgroup -g 1001 appuser && \
+    adduser -D -u 1001 -G appuser -s /bin/false appuser
 
 # 애플리케이션 디렉토리 생성 및 권한 설정
 RUN mkdir -p /app && \
