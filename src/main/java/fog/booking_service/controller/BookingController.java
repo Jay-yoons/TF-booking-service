@@ -6,6 +6,7 @@ import fog.booking_service.dto.BookingListResponse;
 import fog.booking_service.dto.BookingRequest;
 import fog.booking_service.dto.BookingResponse;
 import fog.booking_service.dto.SQSBookingRequest;
+import fog.booking_service.exception.AccessDeniedException;
 import fog.booking_service.service.BookingService;
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.RequiredArgsConstructor;
@@ -100,7 +101,7 @@ public class BookingController {
         // 3. 조회된 예약 정보의 userId와 현재 로그인한 userId가 일치하는지 확인
         if (!bookingResponse.getUserId().equals(userId)) {
             log.error("예약 상세 조회 권한이 없습니다: userId={}, bookingOwnerId={}", userId, bookingResponse.getUserId());
-            throw new SecurityException("접근 권한이 없습니다.");
+            throw new AccessDeniedException("접근 권한이 없습니다.");
         }
 
         return bookingResponse;
